@@ -1,12 +1,17 @@
 using Radzen;
 using RUZWatcher.Components;
+using RUZWatcher.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Pridané Radzen komponenty
 builder.Services.AddRadzenComponents();
+// Pridaný náš http client ako servis na injectovanie
+builder.Services.AddHttpClient<RUZHttpClient>();
 
 var app = builder.Build();
 

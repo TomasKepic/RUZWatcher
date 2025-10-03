@@ -1,20 +1,280 @@
-﻿@page "/vyhladanieuj"
+﻿@page "/vyhladavanieuj"
 @rendermode InteractiveServer
 
-<h3>Vyhľadávanie účtovných jednotiek</h3>
+@using RUZWatcher.Services
+@using System.Text.Json
 
-<RadzenButton Click="@ButtonClicked" Text="Skúšobné tlačidlo"></RadzenButton>
+@inject RUZHttpClient ruzHttpClient
 
-<div class="alert alert-info" hidden="@(!pressed)" id="pressedTest">
-    Tlačidlo bolo stlačené
-</div>
+<h3>Vyhľadávanie účtovnej jednotky</h3>
+
+<Spinner IsRunning="@isRunning">
+    <RadzenTemplateForm TItem="InputModel" Data="@inputModel" Submit="@Search" Context="radzenForm">
+        <RadzenLabel Text="IČO / DIČ:" class="m-3" />
+        <RadzenTextBox Name="IcoDicIdentifier" id="icoDicIdentifier" @bind-Value="@inputModel.Identifier" MaxLength="10" />
+        <RadzenRequiredValidator Component="IcoDicIdentifier" Text="Povinné pole." class="m-3 text-danger" />
+        <RadzenButton ButtonType="Radzen.ButtonType.Submit" Id="searchButton" Text="Vyhľadať" Icon="search" class="m-3" />
+    </RadzenTemplateForm>
+
+    <hr />
+
+    <StatusMessage Response="@Response" />
+
+    @if (NajdenaUctovnaJednotka != null)
+    {
+        <RadzenFieldset AllowCollapse="true">
+            <HeaderTemplate>
+                <b>Sledovanie subjektu</b>
+            </HeaderTemplate>
+            <ChildContent>
+                <div class="row">
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Poznámka:" />
+                        </div>
+                        <div class="m-1" id="name">
+                            <RadzenTextArea Rows="3" Cols="40" @bind-Value="@NajdenaUctovnaJednotka.Poznámka" MaxLength="1000" Placeholder="Poznámka..." />
+                        </div>
+                    </div>
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Hodnotenie:" />
+                        </div>
+                        <div class="m-1" id="type">
+                            <RadzenRating @bind-Value=@(NajdenaUctovnaJednotka.Hodnotenie) />
+                        </div>
+                    </div>
+                    <div class="col form-inline">
+                        <RadzenButton Disabled="true" Click="@SledujSubjekt" Text="Sledovanie subjektu"></RadzenButton>
+                    </div>
+                </div>
+
+            </ChildContent>
+        </RadzenFieldset>
+        <RadzenFieldset AllowCollapse="true">
+            <HeaderTemplate>
+                <b>Vlastnosti subjektu</b>
+            </HeaderTemplate>
+            <ChildContent>
+                <div class="row">
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Názov subjektu:" />
+                        </div>
+                        <div class="m-1" id="name">
+                            @NajdenaUctovnaJednotka.NazovSubjektu
+                        </div>
+                    </div>
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Právna forma:" />
+                        </div>
+                        <div class="m-1" id="type">
+                            @NajdenaUctovnaJednotka.PravnaForma
+                        </div>
+                    </div>
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Dátum vzniku:" />
+                        </div>
+                        <div class="m-1" id="establishmentdate">
+                            @NajdenaUctovnaJednotka.DatumVzniku?.ToString("dd.MM.yyyy")
+                        </div>
+                    </div>
+                </div>
+
+            </ChildContent>
+        </RadzenFieldset>
+        <br>
+        <RadzenFieldset AllowCollapse="true">
+            <HeaderTemplate>
+                <b>Adresa sídla</b>
+            </HeaderTemplate>
+            <ChildContent>
+                <div class="row">
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Ulica:" />
+                        </div>
+                        <div class="m-1" id="street">
+                            @NajdenaUctovnaJednotka.AdresaUlica
+                        </div>
+                    </div>
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="Mesto:" />
+                        </div>
+                        <div class="m-1" id="city">
+                            @NajdenaUctovnaJednotka.AdresaMesto
+                        </div>
+                    </div>
+                    <div class="col form-inline">
+                        <div class="m-1">
+                            <RadzenLabel Class="fw-bold" Text="PSČ:" />
+                        </div>
+                        <div class="m-1" id="postcode">
+                            @NajdenaUctovnaJednotka.AdresaPSC
+                        </div>
+                    </div>
+                </div>
+            </ChildContent>
+        </RadzenFieldset>
+        <br>
+        if (NajdenaUctovnaJednotka != null && NajdenaUctovnaJednotka.UctovneZavierky != null)
+        {
+            <RadzenFieldset AllowCollapse="true">
+                <HeaderTemplate>
+                    <b>Účtovné závierky</b>
+                </HeaderTemplate>
+                <ChildContent>
+                    <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Simple" AllowPaging="true" PageSize="15"
+                                    AllowSorting="true" AllowColumnReorder="true" Data="@NajdenaUctovnaJednotka.UctovneZavierky" TItem="Models.UctovnaZavierka" ExpandMode="DataGridExpandMode.Single" AndOperatorText="A" ApplyFilterText="Použiť filter" ClearFilterText="Zrušiť filter" EmptyText="(prázdne)" EndsWithText="Končí na" EqualsText="Rovná sa" GreaterThanOrEqualsText="Väčšie alebo rovné ako" GreaterThanText="Väčšie ako" LessThanOrEqualsText="Menšie alebo rovné ako" LessThanText="Menšie ako" NotEqualsText="Nerovná sa" OrOperatorText="Alebo" StartsWithText="Začína na" ColumnWidth="auto" ContainsText="Obsahuje">
+                        <Columns>
+                            <RadzenDataGridColumn Property="Rok" Title="Rok" />
+                            <RadzenDataGridColumn Property="Typ" Title="Typ" />
+                            <RadzenDataGridColumn Property="LinkPdf" Title="Link PDF" />
+                        </Columns>
+                    </RadzenDataGrid>
+                </ChildContent>
+            </RadzenFieldset>
+        }
+    }
+</Spinner>
 
 @code {
 
-    bool pressed = false;
-
-    void ButtonClicked()
+    public class InputModel
     {
-        pressed = true;
+        public string? Identifier { get; set; } = "";
+    }
+
+    private bool isRunning;
+
+    private InputModel inputModel = new InputModel();
+    public Models.RestResponse? Response { get; set; } = new Models.RestResponse();
+    private string? NajdenaUctovnaJednotkaIdentifikator;
+    private Models.UctovnaJednotka? NajdenaUctovnaJednotka;
+    private Models.ZoznamIdentifikatorov? NajdenyZoznamIdentifikatorov;
+    private long? NajdenyIdentifikatorUJ;
+    private int hodnotenie = 0;
+
+    /// <summary>
+    /// Vyhľadanie účtovných jednotiek.
+    /// </summary>
+    private async Task Search()
+    {
+        NajdenyZoznamIdentifikatorov = null;
+        NajdenyIdentifikatorUJ = null;
+        NajdenaUctovnaJednotka = null;
+        Response = null;
+        isRunning = true;
+
+        JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+        //nájdeme identifikátor účtovnej jednotky - subjektu
+
+        var url = "uctovne-jednotky?zmenene-od=2000-01-01";
+
+        inputModel.Identifier = inputModel.Identifier!.Trim();
+
+        switch (inputModel.Identifier.Length)
+        {
+            case 8:
+                url += $"&ico={inputModel.Identifier}";
+                break;
+            case 10:
+                url += $"&dic={inputModel.Identifier}";
+                break;
+            default:
+                Response = new Models.RestResponse
+                {
+                    NotFoundMessage = "Identifikátor musí byť IČO (8 číslic) alebo DIČ (10 číslic)."
+                };
+                isRunning = false;
+                return;
+        }
+
+        var content = await ruzHttpClient.GetAsync(url);
+
+        Response = ruzHttpClient.Response;
+
+        if (Response.Error != null || Response.NotFoundMessage != null || content == null)
+        {
+            isRunning = false;
+            return;
+        }
+
+        NajdenyZoznamIdentifikatorov = JsonSerializer.Deserialize<Models.ZoznamIdentifikatorov>(content, jsonOptions);
+
+        if (NajdenyZoznamIdentifikatorov != null && NajdenyZoznamIdentifikatorov.Ids != null && NajdenyZoznamIdentifikatorov.Ids.Count == 1)
+        {
+            NajdenyIdentifikatorUJ = NajdenyZoznamIdentifikatorov.Ids[0];
+        }
+        else
+        {
+            Response.NotFoundMessage = "Nenašla sa jednoznačná účtovná jednotka pre zadaný identifikátor.";
+            isRunning = false;
+            return;
+        }
+
+        //nájdeme účtovnú jednotku - subjekt podľa nájdeného id
+
+        Response = null;
+
+        url = $"uctovna-jednotka?id={NajdenyIdentifikatorUJ}";
+        content = await ruzHttpClient.GetAsync(url);
+
+        Response = ruzHttpClient.Response;
+
+        if (Response.Error != null || Response.NotFoundMessage != null || content == null)
+        {
+            isRunning = false;
+            return;
+        }
+
+        NajdenaUctovnaJednotka = JsonSerializer.Deserialize<Models.UctovnaJednotka>(content, jsonOptions);
+
+        //doplníme k účtovnej jednotke - subjektu aj jej účtovné závierky
+
+        NajdenaUctovnaJednotka!.UctovneZavierky = new List<Models.UctovnaZavierka>();
+
+        if (NajdenaUctovnaJednotka != null && NajdenaUctovnaJednotka.IdsUctovnychZavierok != null &&
+            NajdenaUctovnaJednotka.IdsUctovnychZavierok.Count > 0)
+        {
+            Models.UctovnaZavierka? uctovnaZavierka = null;
+
+            foreach (long id in NajdenaUctovnaJednotka.IdsUctovnychZavierok)
+            {
+                Response = null;
+
+                url = $"uctovna-zavierka?id={id}";
+                content = await ruzHttpClient.GetAsync(url);
+
+                Response = ruzHttpClient.Response;
+
+                if (Response.Error != null || Response.NotFoundMessage != null || content == null)
+                {
+                    isRunning = false;
+                    return;
+                }
+
+                uctovnaZavierka = JsonSerializer.Deserialize<Models.UctovnaZavierka>(content, jsonOptions);
+                if (uctovnaZavierka != null && uctovnaZavierka.Rok != null && uctovnaZavierka.Rok.Length > 4)
+                {
+                    uctovnaZavierka.Rok = uctovnaZavierka.Rok.Substring(0, 4);
+                }
+
+                if (uctovnaZavierka != null)
+                {
+                    NajdenaUctovnaJednotka!.UctovneZavierky.Add(uctovnaZavierka);
+                }
+            }
+        }
+
+        isRunning = false;
+    }
+
+    void SledujSubjekt()
+    {
     }
 }

@@ -1,0 +1,45 @@
+﻿<div class="alert alert-info" hidden="@(!isNotFound)" id="notFoundMessage">
+    @Response?.NotFoundMessage
+</div>
+
+<div class="alert alert-danger" hidden="@(!isError)">
+    <h3 id="errorMessage">@Response?.Error?.Message</h3>
+    <hr />
+    <pre id="errorDetail">@Response?.Error?.Detail</pre>
+</div>
+
+@code {
+
+    [Parameter]
+    public Models.RestResponse? Response
+    {
+        get
+        {
+            return response;
+        }
+        set
+        {
+            if (response != value && value != null)
+            {
+                isError = false;
+                isNotFound = false;
+                response = value;
+
+                if (response.Error != null)
+                {
+                    isError = true;
+                }
+
+                if (response.NotFoundMessage != null)
+                {
+                    isNotFound = true;
+                }
+            }
+        }
+    }
+
+    private bool isError;
+    private bool isNotFound;
+
+    private Models.RestResponse? response;
+}

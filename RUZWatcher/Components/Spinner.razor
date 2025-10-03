@@ -1,0 +1,40 @@
+﻿@if (IsRunning)
+{
+    <div class="row">
+        <div class="col-1">
+            <div class="spinner-border" id="spinner" />
+        </div>
+        <div class="col-11">
+            <h4>Načítavam dáta, prosím čakajte......</h4>
+        </div>
+    </div>
+
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public bool IsRunning
+    {
+        get
+        {
+            return isRunning;
+        }
+        set
+        {
+            if (isRunning != value)
+            {
+                isRunning = value;
+            }
+        }
+    }
+
+    private bool isRunning;
+}
