@@ -1,0 +1,20 @@
+﻿@page "/vyhladanieuj"
+@rendermode InteractiveServer
+
+<h3>Vyhľadávanie účtovných jednotiek</h3>
+
+<RadzenButton Click="@ButtonClicked" Text="Skúšobné tlačidlo"></RadzenButton>
+
+<div class="alert alert-info" hidden="@(!pressed)" id="pressedTest">
+    Tlačidlo bolo stlačené
+</div>
+
+@code {
+
+    bool pressed = false;
+
+    void ButtonClicked()
+    {
+        pressed = true;
+    }
+}
