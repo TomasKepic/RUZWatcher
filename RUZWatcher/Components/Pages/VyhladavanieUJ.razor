@@ -5,6 +5,7 @@
 @using System.Text.Json
 
 @inject RUZHttpClient ruzHttpClient
+@inject DbService databaseService
 
 <h3>Vyhľadávanie účtovnej jednotky</h3>
 
@@ -45,7 +46,7 @@
                         </div>
                     </div>
                     <div class="col form-inline">
-                        <RadzenButton Disabled="true" Click="@SledujSubjekt" Text="Sledovanie subjektu"></RadzenButton>
+                        <RadzenButton Disabled="false" Click="@SledujSubjekt" Text="Sledovanie subjektu"></RadzenButton>
                     </div>
                 </div>
 
@@ -274,7 +275,11 @@
         isRunning = false;
     }
 
-    void SledujSubjekt()
+    async Task SledujSubjekt()
     {
+        if (NajdenaUctovnaJednotka != null)
+        {
+            await databaseService.AddJednotkaAsync(NajdenaUctovnaJednotka!);
+        }
     }
 }

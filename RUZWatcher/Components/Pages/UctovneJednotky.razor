@@ -1,0 +1,71 @@
+﻿@page "/uctovnejednotky"
+@using RUZWatcher.Models
+@using RUZWatcher.Services
+
+@rendermode InteractiveServer
+
+@inject DbService UctovnaService
+
+<h2 class="mb-4 text-xl font-semibold">Účtovné jednotky</h2>
+
+@if (jednotky == null)
+{
+    <p>Načítavam údaje...</p>
+}
+else if (jednotky.Count == 0)
+{
+    <p>V databáze sa nenachádzajú žiadne účtovné jednotky.</p>
+}
+else
+{
+    <RadzenFieldset AllowCollapse="true">
+        <HeaderTemplate>
+            <b>Sledovaní účtovné jednotky v našej databáze</b>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Simple" AllowPaging="true" PageSize="15"
+                            AllowSorting="true" AllowColumnReorder="true" Data="@jednotky" TItem="Models.UctovnaJednotka" ExpandMode="DataGridExpandMode.Single" AndOperatorText="A" ApplyFilterText="Použiť filter" ClearFilterText="Zrušiť filter" EmptyText="(prázdne)" EndsWithText="Končí na" EqualsText="Rovná sa" GreaterThanOrEqualsText="Väčšie alebo rovné ako" GreaterThanText="Väčšie ako" LessThanOrEqualsText="Menšie alebo rovné ako" LessThanText="Menšie ako" NotEqualsText="Nerovná sa" OrOperatorText="Alebo" StartsWithText="Začína na" ColumnWidth="auto" ContainsText="Obsahuje">
+                <Columns>
+                    <RadzenDataGridColumn Property="Id" Title="Id" />
+                    <RadzenDataGridColumn Property="NazovSubjektu" Title="Nazov" />
+                    <RadzenDataGridColumn Property="PravnaForma" Title="Právna forma" />
+                    <RadzenDataGridColumn Property="AdresaMesto" Title="AdresaMesto" />
+                    <RadzenDataGridColumn Property="DatumVzniku" Title="Dátum vzniku" FormatString="{0:dd.MM.yyyy}" />
+                    <RadzenDataGridColumn Property="Poznámka" Title="Poznámka" />
+                    <RadzenDataGridColumn Property="Hodnotenie" Title="Hodnotenie" TextAlign="TextAlign.Center">
+                        <Template Context="data">
+                            <RadzenRating @bind-Value=@(data.Hodnotenie) Name="hodnotenie"></RadzenRating>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn Property="Id" Title="Vymazať">
+                        <Template Context="data">
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Text="Zmazať" Click="@(() => DeleteJednotka(data.Id!.Value))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </ChildContent>
+    </RadzenFieldset>
+}
+
+<hr class="my-4" />
+
+@code {
+    private List<UctovnaJednotka>? jednotky;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        jednotky = await UctovnaService.GetAllJednotkyAsync();
+    }
+
+    private async Task DeleteJednotka(long id)
+    {
+        await UctovnaService.DeleteJednotkaAsync(id);
+        await LoadData();
+    }
+}
