@@ -19,6 +19,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultLocalConnection")));
 // Pridanie servisu pre prácu s DB
 builder.Services.AddScoped<DbService>();
+// Servis pre export do Excelu
+builder.Services.AddScoped<ExcelExportService>();
 
 var app = builder.Build();
 

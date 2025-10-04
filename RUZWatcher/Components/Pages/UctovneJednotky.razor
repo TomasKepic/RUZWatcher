@@ -1,10 +1,14 @@
 ﻿@page "/uctovnejednotky"
 @using RUZWatcher.Models
 @using RUZWatcher.Services
+@using Microsoft.JSInterop
+@inject ExcelExportService ExcelService
+@inject IJSRuntime JS
 
 @rendermode InteractiveServer
 
 @inject DbService UctovnaService
+@inject NotificationService NotificationService
 
 <h2 class="mb-4 text-xl font-semibold">Účtovné jednotky</h2>
 
@@ -46,9 +50,9 @@ else
             </RadzenDataGrid>
         </ChildContent>
     </RadzenFieldset>
+    <br />
+    <RadzenButton Icon="file_download" Text="Export do Excelu" Click="@ExportToExcel" Disabled="@(!jednotky.Any())" ButtonStyle="ButtonStyle.Success" />
 }
-
-<hr class="my-4" />
 
 @code {
     private List<UctovnaJednotka>? jednotky;
@@ -67,5 +71,31 @@ else
     {
         await UctovnaService.DeleteJednotkaAsync(id);
         await LoadData();
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (jednotky != null)
+            {
+                // Generuj Excel súbor
+                var excelData = ExcelService.ExportUctovneJednotky(jednotky);
+                var fileName = ExcelService.GetFileName();
+
+                // Stiahni súbor v prehliadači
+                await JS.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(excelData));
+            }
+        }
+        catch (Exception ex)
+        {
+            // Notifikácia o prípadne neúspešnom exporte cez Radzen NotificationService
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Chyba pri exporte do excelu.", Detail = $"{ex.Message}", Duration = 4000 });
+        }
     }
 }
