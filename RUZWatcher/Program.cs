@@ -12,6 +12,8 @@ builder.Services.AddRazorComponents()
 
 // Pridané Radzen komponenty
 builder.Services.AddRadzenComponents();
+// Pridané podpora cacheovania do pamäte
+builder.Services.AddMemoryCache();
 // Pridaný náš http client ako servis na injectovanie
 builder.Services.AddHttpClient<RUZHttpClient>();
 // Pridanie kontextu SQLite databázy

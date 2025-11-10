@@ -1,6 +1,6 @@
-﻿using RUZWatcher.Models;
+﻿using Microsoft.Extensions.Caching.Memory;
+using RUZWatcher.Models;
 using System.Net;
-using System.Text.Json;
 
 namespace RUZWatcher.Services
 {
@@ -10,16 +10,19 @@ namespace RUZWatcher.Services
     public class RUZHttpClient
     {
         private readonly HttpClient _httpClient;
+        private readonly IMemoryCache _cache;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         /// <summary>
         /// Odpoveď volania.
         /// </summary>
         public RestResponse Response { get; private set; }
 
-        public RUZHttpClient(HttpClient httpClient)
+        public RUZHttpClient(HttpClient httpClient, IMemoryCache cache)
         {
 
             _httpClient = httpClient;
+            _cache = cache;
 
             _httpClient.BaseAddress = new Uri("https://www.registeruz.sk/cruz-public/api/");
 
@@ -39,6 +42,12 @@ namespace RUZWatcher.Services
         {
             Response = new RestResponse();
 
+            //Skontrolujeme cache
+            if (_cache.TryGetValue(url, out string? cached))
+            {
+                return cached;
+            }
+
             HttpResponseMessage? response;
             string? content;
             try
@@ -53,6 +62,13 @@ namespace RUZWatcher.Services
             }
 
             SetResponse(url, response.StatusCode, content);
+
+            if (response.StatusCode == HttpStatusCode.OK && content != null)
+            {
+                //Uložíme do cache
+                _cache.Set(url, content, _cacheDuration);
+            }
+
             return response.StatusCode == HttpStatusCode.OK ? content : null;
         }
 
